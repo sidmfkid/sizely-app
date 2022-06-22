@@ -1,0 +1,23 @@
+.card-body .row.info {
+  flex-wrap: wrap;
+}
+
+.stacked-images {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+.stacked-images .images {
+  max-width: 100%;
+}
+
+.current-edit {
+  max-height: 21.5rem;
+}
+
+.current-edit-container {
+  height: 21.5rem;
+}
+/*# sourceMappingURL=InputCard.css.map */

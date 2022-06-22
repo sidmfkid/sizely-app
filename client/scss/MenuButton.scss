@@ -1,0 +1,24 @@
+.menu-button {
+    position: fixed;
+    z-index: 10;
+    top: 38%;
+    left: -13px;
+    transition: left .3s ease-in-out;
+    .btn{
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+    span{
+        transition: all .3s ease-in-out;
+        font-size: 2.9rem;
+        vertical-align: middle;
+        line-height: 3.5rem;
+    }
+    }
+    &.open{
+        left: 398px;
+    transition: left .3s ease-in-out .3s;
+
+    }
+}

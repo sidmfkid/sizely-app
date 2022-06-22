@@ -1,0 +1,129 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
+:root {
+  height: 100vh;
+}
+
+.material-symbols-rounded {
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 200, 'opsz' 48;
+}
+
+button, input[type="submit"], input[type="reset"] {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: inherit;
+}
+
+.card {
+  position: relative;
+}
+
+.card-header {
+  position: relative;
+  z-index: 4;
+}
+
+.card .icon-container {
+  position: absolute;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3;
+}
+
+.card .icon-container.back {
+  padding-left: .4rem;
+  left: 0rem;
+  top: 0;
+}
+
+.card .icon-container.back::after {
+  content: "";
+  left: 0rem;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.788) 15%, rgba(255, 255, 255, 0) 100%);
+}
+
+.card .icon-container.forward {
+  padding-right: .4rem;
+  right: 0rem;
+  top: 0;
+}
+
+.card .icon-container.forward::after {
+  content: "";
+  right: 0rem;
+  width: 110%;
+  height: 100%;
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.788) 15%, rgba(255, 255, 255, 0) 100%);
+}
+
+.card .icon-container .span {
+  z-index: -1;
+}
+
+.card-body.images {
+  height: fit-content;
+  padding: 1.6rem 2.4rem;
+  overflow-x: scroll;
+}
+
+.card-body.images::-webkit-scrollbar {
+  width: 10px;
+  background: rgba(var(--bs-info-rgb), var(--bs-text-opacity));
+}
+
+.card-body .row {
+  flex-wrap: nowrap;
+  height: inherit;
+}
+
+.card-body .row .col-3 {
+  width: 14%;
+}
+
+.card-body .row .img-checkbox:checked ~ .img-container {
+  filter: drop-shadow(0 5px 11px rgba(13, 110, 253, 0.8));
+}
+
+.card-body .row .img-container {
+  filter: drop-shadow(0 0px 0px rgba(13, 110, 253, 0.2));
+  height: calc(6.9rem + 5vw);
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: auto;
+  overflow: hidden;
+  transition: all .3s ease-in-out;
+  cursor: pointer;
+}
+
+.card-body .row .img-container .card-img {
+  height: 100%;
+  width: 100%;
+  object-position: 50% 50%;
+  object-fit: cover;
+}
+
+.modal-img-container {
+  height: calc(7.5rem + 5vw);
+}
+
+.modal-img {
+  height: 100%;
+  width: 100%;
+  object-position: 50% 50%;
+  object-fit: contain;
+}
+/*# sourceMappingURL=Style.css.map */
