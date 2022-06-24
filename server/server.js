@@ -13,7 +13,9 @@ import cookieParser from "cookie-parser";
 import StoreModel from "./models/storeModel";
 import SessionModel from "./models/sessionModel";
 import topLevelAuthRedirect from "./utils/topLevelAuthRedirect";
-import storage from "./cloudinary/index";
+// import { storage } from "./cloudinary/index";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 // import webhookRegistrar from "./webhooks/webhookRegistrar";
 import webhookRoutes from "./webhooks/_routes.js";
 import sessionStorage from "./utils/sessionStorage";
@@ -29,10 +31,34 @@ import {
   shopRedact,
 } from "./webhooks/gdpr";
 import multer from "multer";
-const { SHOP_API_SECRET, SHOP_API_KEY, SHOP_API_SCOPES, HOST, DB_URL, SHOP } =
-  process.env;
+const {
+  SHOP_API_SECRET,
+  SHOP_API_KEY,
+  SHOP_API_SCOPES,
+  HOST,
+  DB_URL,
+  SHOP,
+  CLOUD_NAME,
+  CLOUD_API_KEY,
+  CLOUD_API_SECRET,
+} = process.env;
 
 const app = express();
+
+cloudinary.config({
+  cloud_name: CLOUD_NAME,
+  api_key: CLOUD_API_KEY,
+  api_secret: CLOUD_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "sizely",
+    allowedFormats: ["jpeg", "png", "jpg"],
+  },
+});
+
 const upload = multer({ storage });
 devBundle.compile(app); // comment this line when you are working in production mode
 
@@ -97,7 +123,7 @@ app.get("/home", async (req, res) => {
   try {
     const { shop } = req.query;
     const isShopAvaialble = await StoreModel.findOne({ shop });
-    console.log(isShopAvaialble);
+    // console.log(isShopAvaialble);
     if (typeof isShopAvaialble !== "undefined") {
       res.redirect(`/auth?shop=${req.query.shop}`);
     } else {
@@ -119,7 +145,7 @@ app.post("/graphql", verifyRequest(app), async (req, res) => {
     res.status(500).send(err.message);
   }
 });
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: false, limit: "500mb" }));
 app.use(bodyParser.json());
 app.use(csp);
 app.use(isActiveShop);
@@ -137,71 +163,68 @@ app.get("/", async (req, res) => {
   res.send(template());
 });
 
-app.post("/upload", async (req, res) => {
+app.post("/upload", upload.array("images"), async (req, res) => {
   try {
-    // const session = await Shopify.Utils.loadCurrentSession(req, res);
+    const session = await Shopify.Utils.loadCurrentSession(req, res);
+    const client = new Shopify.Clients.Graphql(
+      session.shop,
+      session.accessToken
+    );
+    const { shop } = req.query;
+    // console.log(req.query);
 
-    // const imageArray = req.body.filesToUpload;
-    // const imageInfoArray = imageArray.map((file) => {
-    //   let images = {
-    //     alt: "",
-    //     contentType: "IMAGE",
-    //     originalSource: file.fileUrl,
-    //   };
-    //   return images;
-    // });
-    // const imageInfoArrayString = JSON.stringify(imageInfoArray);
-    // console.log(imageInfoArrayString);
-    // const client = new Shopify.Clients.Graphql(
-    //   session.shop,
-    //   session.accessToken
-    // );
+    let fileArr = { files: [] };
 
-    // let postedImages = [];
-    // for (let i = 0; i < imageInfoArray.length; i++) {
-    //   const { alt, contentType, originalSource } = imageInfoArray[i];
-    //   const sourceSplit = originalSource.split("blob:");
-    //   const source = sourceSplit[1] + ".jpg";
-    //   console.log(alt, contentType, source);
-    //   let data = await client.query({
-    //     data: {
-    //       query: `mutation fileCreate($files: [FileCreateInput!]!) {
-    //         fileCreate(files: $files) {
-    //           files {
-    //             alt
-    //             createdAt
-    //           }
-    //         }
-    //       }`,
-    //       variables: {
-    //         files: {
-    //           alt: alt,
-    //           contentType: contentType,
-    //           originalSource: originalSource,
-    //         },
-    //       },
-    //     },
-    //   });
-    //   postedImages.push(data);
-    // }
+    for (let i = 0; i < req.files.length; i++) {
+      fileArr.files.push({
+        originalName: req.files[i].originalname,
+        url: req.files[i].path,
+        size: req.files[i].size,
+      });
+    }
 
-    // const data = await client.query({
-    //   data: {
-    //     query: `mutation fileCreate($files: [FileCreateInput!]!) {
-    //       fileCreate(files: $files) {
-    //         files {
-    //           alt
-    //         }
-    //       }
-    //     }`,
-    //     variables: {
-    //       files: imageInfoArray,
-    //     },
-    //   },
-    // });
-    res.json(postedImages);
+    await StoreModel.findOneAndUpdate(
+      { shop },
+      {
+        $push: {
+          files: fileArr.files,
+        },
+      }
+    );
+
+    // const newupdate = await StoreModel.bulkSave();
+
+    // store.insertMany({ files: fileArr.files });
+    // console.log(await StoreModel.findOne({ shop: shop }));
+
+    const imageInfoArray = fileArr.files.map((file) => {
+      let images = {
+        alt: "",
+        contentType: "IMAGE",
+        originalSource: file.url,
+      };
+      return images;
+    });
+
+    let data = await client.query({
+      data: {
+        query: `mutation fileCreate($files: [FileCreateInput!]!) {
+          fileCreate(files: $files) {
+            files {
+              alt
+              createdAt
+            }
+          }
+        }`,
+        variables: {
+          files: imageInfoArray,
+        },
+      },
+    });
+
+    res.json({ data: data.body });
   } catch (error) {
-    console.log(error);
+    console.log(error, "somethinbad happened");
   }
 });
 

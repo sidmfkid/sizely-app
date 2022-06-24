@@ -12,6 +12,8 @@ import CompareCard from "./CompareCard";
 import axios from "axios";
 import Compressor from "compressorjs";
 import CreateCard from "./CreateCard";
+import { dataURItoBlob } from "../utils";
+import { blobToBase64 } from "../utils";
 
 function Main(props) {
   const [imageData, setImageData] = useState();
@@ -21,8 +23,12 @@ function Main(props) {
   const [currentEditObj, setCurrentEditObj] = useState(0);
   const [currentOptions, setCurrentOptions] = useState({});
   const [compressedImages, setCompressedImages] = useState({});
+  const [compressedUploads, setCompressedUploads] = useState({});
 
   let fileArr = [];
+
+  const query = window.location.search;
+  const shop = query.slice(6, query.indexOf("&host"));
 
   let outputData = {
     images: [],
@@ -35,6 +41,20 @@ function Main(props) {
     let fileName = splitString[2].slice("1", endIndex);
     return fileName;
   };
+
+  function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        func.apply(this, args);
+      }, timeout);
+    };
+  }
+  function saveInput() {
+    console.log("Saving data");
+  }
+  const processUpload = debounce((e) => createFile(e));
 
   const showCompressedImages = () => {
     return outputData.images;
@@ -60,11 +80,13 @@ function Main(props) {
   let fileWidth;
   let fileHeight;
   let newOutputData = [];
+  let fileBlobs = [];
 
   const startCompressing = async (files, options) => {
     let compressor;
     let fileObj = {};
     newOutputData = [];
+    fileBlobs = [];
     let compressorArr = [];
     for (let i = 0; i < files.length; i++) {
       if (options) {
@@ -92,9 +114,10 @@ function Main(props) {
               fileHeight,
             };
             newOutputData.push(fileObj);
+            fileBlobs.push(result);
             if (newOutputData.length === files.length) {
               return new Promise((resolve, reject) => {
-                resolve(storeItem(newOutputData));
+                resolve(storeItem(newOutputData, fileBlobs));
               });
             }
           },
@@ -102,6 +125,7 @@ function Main(props) {
             console.log(err.message);
           },
         });
+
         compressorArr.push(compressor);
       }
       if (options === undefined) {
@@ -130,9 +154,11 @@ function Main(props) {
                 fileHeight,
               };
               newOutputData.push(fileObj);
+              fileBlobs.push(Blob);
+
               if (newOutputData.length === files.length) {
                 return new Promise((resolve, reject) => {
-                  resolve(storeItem(newOutputData));
+                  resolve(storeItem(newOutputData, fileBlobs));
                 });
               }
             },
@@ -158,9 +184,11 @@ function Main(props) {
                 fileUrl,
               };
               newOutputData.push(fileObj);
+              fileBlobs.push(Blob);
+
               if (newOutputData.length === files.length) {
                 return new Promise((resolve, reject) => {
-                  resolve(storeItem(newOutputData));
+                  resolve(storeItem(newOutputData, fileBlobs));
                 });
               }
             },
@@ -172,12 +200,18 @@ function Main(props) {
         compressorArr.push(compressor);
       }
     }
+    if (JSON.parse(localStorage["currentSelection"]).length === 0) {
+      localStorage["blobs"] = JSON.stringify([]);
+    }
     console.log(compressorArr);
   };
 
-  async function storeItem(data) {
-    console.log(data.length);
+  async function storeItem(data, files) {
+    localStorage.setItem("blobs", "[]");
+
     localStorage.setItem("compressedFiles", JSON.stringify(await data));
+    // localStorage.setItem("blobs", JSON.stringify(await fileStrings));
+    setCompressedUploads((images) => files);
     setCompressedImages((images) => data);
   }
   function compressedFiles(files, options) {
@@ -400,18 +434,26 @@ function Main(props) {
     e.preventDefault();
     console.log(e.target);
 
-    const filesToUpload = JSON.parse(localStorage["compressedFiles"]);
+    const filesToUpload = JSON.parse(localStorage["blobs"]);
 
-    const base64 = filesToUpload.map((file) => {
-      console.log(file);
-    });
+    const fd = new FormData();
+    for (let i = 0; i < compressedUploads.length; i++) {
+      fd.append("images", compressedUploads[i], compressedUploads[i].name);
+    }
 
-    // axios
-    //   .post("/upload", {
-    //     filesToUpload,
-    //   })
-    //   .then((res) => console.log(res))
-    //   .catch((error) => console.log(error));
+    // console.log(...compressedUploads, fd);
+
+    axios
+      .post("/upload", fd, {
+        params: {
+          shop: shop,
+        },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((res) => console.log(res))
+      .catch((error) => console.log(error));
   }
 
   // INPUT EL VALUES
@@ -559,7 +601,7 @@ function Main(props) {
             <div className="row">
               <div className="mt-4 col-3">
                 <div className="mb-4">
-                  <CreateCard createFile={createFile} />
+                  <CreateCard createFile={processUpload} />
                 </div>
                 <OptionsCard
                   optionsSubmit={optionsSubmit}

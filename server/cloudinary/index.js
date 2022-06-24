@@ -1,5 +1,6 @@
-import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import dotenv from "dotenv";
+
+import CloudinaryStorage from "multer-storage-cloudinary";
 import cloudinary from "cloudinary";
 
 const { CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET } = process.env;
@@ -18,4 +19,4 @@ const storage = new CloudinaryStorage({
   },
 });
 
-export default storage;
+export { storage };
